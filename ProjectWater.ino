@@ -1,28 +1,78 @@
+/*
+ * Debug flag (sets shorter timings)
+ */
+ 
 #define DEBUG true
 
-// Humidity values
+/*
+ * Humidity value breakpoints for YL-69
+ */
+ 
 #define FLOOR_NOT_IN_SOIL 1000
 #define FLOOR_DRY_SOIL 600
 #define FLOOR_HUMID_SOIL 370
 
-// Pins
+/*
+ * Pin defines
+ */
+ 
 #define PIN_CONTROL 2
 #define PIN_SAMPLE A0
 
-// Confguration
+/*
+ * Default configuration
+ */
+ 
 const int NR_OF_SAMPLES = 10;
 int SECS_BETWEEN_SAMPLINGS = 60;
-// Default to 1 hour
 int PAUSE_SECS_AFTER_WATER = 60 * 60;
-// Default to 15 min
 int SECS_TO_WATER = 15 * 60;
 
-// Globals
+/*
+ * Globals
+ */
+ 
 int SAMPLES[NR_OF_SAMPLES];
-int LAST_SAMPLE = 0;
-int SAMPLE_INDEX = 0;
 int SAMPLES_GATHERED = 0;
 
+/*
+ * Print functions
+ */
+ 
+void printSampleMessage(int sample) {
+  Serial.print("Sampled value: ");
+  Serial.print(sample);
+  Serial.print("\n");
+}
+
+void printWateringMsg(int i) {
+  Serial.print("Status: WATERING. ");
+  Serial.print(secsToMins(i));
+  Serial.print(" out of ");
+  Serial.print(secsToMins(SECS_TO_WATER));
+  Serial.print(" minutes elapsed\n");
+}
+
+void printAfterWateringMsg(int i) {
+  Serial.print("Status: WAITING AFTER WATERING. ");
+  Serial.print(secsToMins(i));
+  Serial.print(" out of ");
+  Serial.print(secsToMins(PAUSE_SECS_AFTER_WATER));
+  Serial.print(" minutes elapsed\n");
+}
+
+void printAvgMessage(int avg) {
+  Serial.print("Average of last ");
+  Serial.print(NR_OF_SAMPLES);
+  Serial.print(" is ");
+  Serial.print(avg);
+  Serial.print("\n");
+}
+
+/*
+ * Performs setup of the Arduino pins and debug mode
+ */
+ 
 void setup() {
   Serial.begin(9600);
   pinMode(PIN_SAMPLE, INPUT);
@@ -32,67 +82,95 @@ void setup() {
   }
 }
 
+/*
+ * Change to lower debug timings (if #debug is true)
+ */
+ 
 void setupDebugValues() {
-  SECS_BETWEEN_SAMPLINGS = 5;
+  SECS_BETWEEN_SAMPLINGS = 1;
   PAUSE_SECS_AFTER_WATER = 10;
-  SECS_TO_WATER = 10;
+  SECS_TO_WATER = 15;
 }
 
-void openWaterFlow() {
+/*
+ * Opens/closes the water valve
+ */
+
+void openWaterValve() {
+  Serial.print("Started watering.\n");
   digitalWrite(PIN_CONTROL, HIGH);
 }
 
-void closeWaterFlow() {
+void closeWaterValve() {
+  Serial.print("Stopped watering.\n");
   digitalWrite(PIN_CONTROL, LOW);
 }
+
+/*
+ * Time conversion functions (to avoid integer overlows)
+ */
 
 unsigned long minuteInMs() {
   return 60UL * 1000UL;
 }
 
+unsigned long secInMs() {
+  return 1000UL;
+}
+
+int secsToMins(int secs) {
+  return (int)(secs / 60);
+}
+
+/*
+ * Runs watering program
+ */
+
 void doWatering() {
-  openWaterFlow();
-  for (int i = 0; i < (SECS_TO_WATER / 60); i += 60) {
-    delay(minuteInMs());
-    printWateringMsg(i);
+  openWaterValve();
+  for (int i = 0; i < SECS_TO_WATER; i++) {
+    delay(secInMs());
+    if (i == 0 || i % 60 == 0) {
+      printWateringMsg(i);
+    }   
   }
-  closeWaterFlow();
+  closeWaterValve();
   doWaitAfterWatering();
 }
 
-void printWateringMsg(int i) {
-  Serial.print("Status: WATERING. ");
-  Serial.print(i/60);
-  Serial.print(" out of ");
-  Serial.print(SECS_TO_WATER/60);
-  Serial.print(" minutes elapsed");
-}
+/*
+ * Runs wait cycle after watering has completed
+ */
 
 void doWaitAfterWatering() {
-  for (int i = 0; i < (PAUSE_SECS_AFTER_WATER / 60); i += 60) {
-    delay(minuteInMs());
-    printAfterWateringMsg(i);
+  for (int i = 0; i < PAUSE_SECS_AFTER_WATER; i++) {
+    delay(secInMs());  
+    if (i == 0 || i % 60 == 0) {
+      printAfterWateringMsg(i);
+    } 
   }
   resetSampling();
 }
 
-void printAfterWateringMsg(int i) {
-  Serial.print("Status: WAITING AFTER WATERING. ");
-  Serial.print(i/60);
-  Serial.print(" out of ");
-  Serial.print(PAUSE_SECS_AFTER_WATER/60);
-  Serial.print(" minutes elapsed");
-}
+/*
+ * Reset number of samples gathered after each watering
+ */
 
 void resetSampling() {
-  LAST_SAMPLE = 0;
-  SAMPLE_INDEX = 0;
   SAMPLES_GATHERED = 0;
 }
+
+/*
+ * Checks if a value is considered to be in the range of dry soil
+ */
 
 bool valueIsDry(int value) {
   return value < FLOOR_NOT_IN_SOIL && value >= FLOOR_DRY_SOIL;
 }
+
+/*
+ * Calculates average of samples currently in array
+ */
 
 int getAverageOfSamples() {
   int total = 0;
@@ -100,20 +178,24 @@ int getAverageOfSamples() {
     total += SAMPLES[i];
   }
   int avg = (int)(total / NR_OF_SAMPLES);
-  Serial.print("Average of last ");
-  Serial.print(NR_OF_SAMPLES);
-  Serial.print(" is ");
-  Serial.print(avg);
+  printAvgMessage(avg);
   return avg;
 }
 
+/*
+ * Gets a soil sample and saves it to array
+ */
+
 void sampleSoil() {
   int sample = analogRead(PIN_SAMPLE);
-  SAMPLES[SAMPLE_INDEX % NR_OF_SAMPLES] = sample;
-  LAST_SAMPLE = sample;
+  SAMPLES[SAMPLES_GATHERED % NR_OF_SAMPLES] = sample;
   SAMPLES_GATHERED++;
-  Serial.print("Sampled value: " + sample);
+  printSampleMessage(sample);
 }
+
+/*
+ * Main loop
+ */
 
 void loop() {
   sampleSoil();
@@ -124,8 +206,13 @@ void loop() {
     if (valueIsDry(avgValue)) {
       doWatering();
     }
+  } else {
+    Serial.print("Not enough samples gathered for average. Need ");
+    Serial.print(NR_OF_SAMPLES - SAMPLES_GATHERED);
+    Serial.print(" more\n");
   }
 
   delay(SECS_BETWEEN_SAMPLINGS * 1000UL);
 }
+
 
