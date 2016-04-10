@@ -9,6 +9,10 @@ An automated watering system for outdoor plants using an Arduino Uno and some el
 * 12V Relay with 5V control
 * K-Rui dishwasher water valve
 
+## Moisture measurements
+* Bought soil for sowing (newly opened bag): 400-500
+* Wet soil in pot: 200-300
+
 ## Todo
 
 * Get suitable water hose diameter and securely attach to water outlet

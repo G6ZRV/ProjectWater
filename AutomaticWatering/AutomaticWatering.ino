@@ -7,10 +7,9 @@
 /*
  * Humidity value breakpoints for YL-69
  */
- 
-#define FLOOR_NOT_IN_SOIL 1000
-#define FLOOR_DRY_SOIL 400
-#define FLOOR_HUMID_SOIL 370
+
+#define DRY_MAX_VALUE 1000
+#define DRY_MIN_VALUE 400
 
 /*
  * Pin defines
@@ -40,6 +39,9 @@ int SAMPLES_GATHERED = 0;
  */
 
 void printConfiguration() {
+  if (DEBUG) { 
+    Serial.print("DEBUG MODE IS ACTIVE!\n"); 
+  }
   Serial.print("Started program with configuration:\n");
   Serial.print("Nr of samples to average: ");
   Serial.print(NR_OF_SAMPLES);
@@ -182,7 +184,7 @@ void resetSampling() {
  */
 
 bool valueIsDry(int value) {
-  return value < FLOOR_NOT_IN_SOIL && value >= FLOOR_DRY_SOIL;
+  return value < DRY_MAX_VALUE && value >= DRY_MIN_VALUE;
 }
 
 /*
