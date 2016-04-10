@@ -2,7 +2,7 @@
  * Debug flag (sets shorter timings)
  */
  
-#define DEBUG true
+#define DEBUG false
 
 /*
  * Humidity value breakpoints for YL-69
@@ -40,7 +40,7 @@ int SAMPLES_GATHERED = 0;
  */
  
 void printSampleMessage(int sample) {
-  Serial.print("Sampled value: ");
+  Serial.print("Sampled value (avg): ");
   Serial.print(sample);
   Serial.print("\n");
 }
@@ -187,7 +187,16 @@ int getAverageOfSamples() {
  */
 
 void sampleSoil() {
-  int sample = analogRead(PIN_SAMPLE);
+  int sample = 0, sampleTotal = 0, nrOfSamples = 10;
+  Serial.print("Started sampling: ");
+  for (int i = 0; i < nrOfSamples; i++) {
+    sample = analogRead(PIN_SAMPLE);
+    sampleTotal += sample;
+    Serial.print(sample);
+    Serial.print(" ");
+    delay(200);    
+  }
+  sample = (int)(sampleTotal / nrOfSamples);
   SAMPLES[SAMPLES_GATHERED % NR_OF_SAMPLES] = sample;
   SAMPLES_GATHERED++;
   printSampleMessage(sample);
