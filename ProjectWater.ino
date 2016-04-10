@@ -9,7 +9,7 @@
  */
  
 #define FLOOR_NOT_IN_SOIL 1000
-#define FLOOR_DRY_SOIL 600
+#define FLOOR_DRY_SOIL 400
 #define FLOOR_HUMID_SOIL 370
 
 /*
@@ -38,6 +38,22 @@ int SAMPLES_GATHERED = 0;
 /*
  * Print functions
  */
+
+void printConfiguration() {
+  Serial.print("Started program with configuration:\n");
+  Serial.print("Nr of samples to average: ");
+  Serial.print(NR_OF_SAMPLES);
+  Serial.print("\n");
+  Serial.print("Seconds between samplings: ");
+  Serial.print(SECS_BETWEEN_SAMPLINGS);
+  Serial.print("\n");
+  Serial.print("Pause in seconds after watering: ");
+  Serial.print(PAUSE_SECS_AFTER_WATER);
+  Serial.print("\n");
+  Serial.print("Watering time in seconds: ");
+  Serial.print(SECS_TO_WATER);
+  Serial.print("\n\n\n");
+}
  
 void printSampleMessage(int sample) {
   Serial.print("Sampled value (avg): ");
@@ -80,6 +96,7 @@ void setup() {
   if (DEBUG) {
     setupDebugValues();
   }
+  printConfiguration();
 }
 
 /*
@@ -97,12 +114,12 @@ void setupDebugValues() {
  */
 
 void openWaterValve() {
-  Serial.print("Started watering.\n");
+  Serial.print("\nStarted watering.\n");
   digitalWrite(PIN_CONTROL, HIGH);
 }
 
 void closeWaterValve() {
-  Serial.print("Stopped watering.\n");
+  Serial.print("\nStopped watering.\n");
   digitalWrite(PIN_CONTROL, LOW);
 }
 
